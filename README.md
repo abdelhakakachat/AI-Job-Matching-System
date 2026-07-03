@@ -204,30 +204,18 @@ The system uses AI to:
 # 📂 Project Structure
 
 ```
-AI-CV-Job-Matcher
+AI-Job-Matching-System
 │
 ├── workflow/
-│   └── job_cv_matcher.json
-│
-├── prompts/
-│   ├── cv_parser_prompt.md
-│   └── job_matching_prompt.md
+│   └── AI-Job-Matching-System.json
 │
 ├── screenshots/
-│   ├── workflow.png
-│   ├── telegram_result.png
-│   └── architecture.png
-│
-├── docs/
-│   └── setup.md
-│
-├── example/
-│   ├── sample_cv.pdf
-│   └── sample_output.json
+│   ├── Workflow.png
+│   └── telegram-result.png
 │
 ├── README.md
-│
-└── LICENSE
+├── LICENSE
+└── .gitignore
 ```
 
 ---
@@ -237,7 +225,7 @@ AI-CV-Job-Matcher
 Clone the repository
 
 ```bash
-git clone https://github.com/YOUR_USERNAME/AI-CV-Job-Matcher.git
+git clone https://github.com/abdelhakakachat/AI-CV-Job-Matcher.git
 
 cd AI-CV-Job-Matcher
 ```
