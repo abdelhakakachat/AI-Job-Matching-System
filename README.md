@@ -134,7 +134,7 @@ Each result includes:
 
 Example:
 
-![Telegram Result](screenshots/telegram_result.png)
+![Telegram Result](telegram-result.png)
 
 ```text
 🏆 Job Match
