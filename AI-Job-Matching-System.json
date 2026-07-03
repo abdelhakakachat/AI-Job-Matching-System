@@ -1,0 +1,676 @@
+{
+  "name": "job_cv",
+  "nodes": [
+    {
+      "parameters": {
+        "updates": [
+          "message"
+        ],
+        "additionalFields": {
+          "download": true
+        }
+      },
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        0,
+        32
+      ],
+      "id": "a7e2fb90-698f-45ff-8029-d8ef47c867ea",
+      "name": "Telegram Trigger",
+      "webhookId": "7dc76006-49e6-426f-ac64-8852f3f52c2d",
+      "retryOnFail": true,
+      "credentials": {
+        "telegramApi": {
+          "id": "Ehqu4rYjjb9khqk0",
+          "name": "Telegram account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "165e7c33-65c1-4517-8a9f-4e6b57df929f",
+              "leftValue": "={{ $binary.data.mimeType }}",
+              "rightValue": "=application/pdf",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        208,
+        32
+      ],
+      "id": "4ff2c481-c10e-45af-b2be-de959723a83e",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "resource": "file",
+        "fileId": "={{ $json.message.document.file_id }}",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        512,
+        -64
+      ],
+      "id": "dab2cab6-214d-46ca-ba13-a45574d15767",
+      "name": "Get a file",
+      "webhookId": "dbc67544-0529-436f-bd02-138c5a9f797b",
+      "credentials": {
+        "telegramApi": {
+          "id": "Ehqu4rYjjb9khqk0",
+          "name": "Telegram account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "pdf",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1.1,
+      "position": [
+        768,
+        -64
+      ],
+      "id": "9da2b270-31a6-4021-bf5c-3f556cbdfdf6",
+      "name": "Extract from File"
+    },
+    {
+      "parameters": {
+        "jsCode": "let text = $json.text.trim();\n\n// Remove ```json and ```\ntext = text.replace(/^```json\\s*/i, \"\");\ntext = text.replace(/^```\\s*/i, \"\");\ntext = text.replace(/\\s*```$/, \"\");\n\nconst cv = JSON.parse(text);\n\nconst geoId = \"106395874\";\n\nconst candidate = {\n  skills: cv.skills || [],\n  experience: cv.experience || [],\n  education: cv.education || [],\n  projects: cv.projects || [],\n  languages: cv.languages || []\n};\n\nreturn cv.preferred_job_titles.map(title => ({\n  json: {\n    keyword: title,\n    url: `https://www.linkedin.com/jobs/search/?keywords=${encodeURIComponent(title)}&geoId=${geoId}&f_TPR=r604800&f_WT=1%2C2%2C3&sortBy=DD`,\n    candidate\n  }\n}));"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1504,
+        -64
+      ],
+      "id": "7cacbb87-721a-48a8-80e4-d23e6b5564e9",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "{{$env.APIFY_TOKEN}}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"urls\": [\n    \"{{ $json.url }}\"\n  ],\n  \"scrapeCompanyDetails\": true,\n  \"maxJobs\": 5\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        1712,
+        -64
+      ],
+      "id": "a30ff993-37d2-4806-88da-8fd06dadd1fb",
+      "name": "HTTP Request"
+    },
+    {
+      "parameters": {
+        "jsCode": "return items.map(item => {\n  let text = item.json.text.trim();\n\n  text = text\n    .replace(/^```(?:json)?/i, \"\")\n    .replace(/```$/i, \"\")\n    .trim();\n\n  return {\n    json: JSON.parse(text)\n  };\n});"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2800,
+        -64
+      ],
+      "id": "f12e290c-cbe3-4fa8-a098-5b6f1b8b8656",
+      "name": "Code in JavaScript1"
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combineBy": "combineByPosition",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        3344,
+        -432
+      ],
+      "id": "d556e3d7-ab3a-4893-86ad-2f2227d1a88f",
+      "name": "Merge"
+    },
+    {
+      "parameters": {
+        "sortFieldsUi": {
+          "sortField": [
+            {
+              "fieldName": "score",
+              "order": "descending"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.sort",
+      "typeVersion": 1,
+      "position": [
+        3648,
+        -80
+      ],
+      "id": "a388d1a4-f5dd-4c90-9e55-666f24a54212",
+      "name": "Sort"
+    },
+    {
+      "parameters": {
+        "jsCode": "return items.map(item => ({\n  json: {\n    title: item.json.title,\n    company: item.json.companyName,\n    location: item.json.location,\n    link: item.json.link,\n    description: item.json.descriptionText\n  }\n}));"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2064,
+        -64
+      ],
+      "id": "91f5d8ac-aee6-46aa-afac-f005268f4268",
+      "name": "Code in JavaScript2"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Candidate Profile\n\n{{ JSON.stringify($('Code in JavaScript').first().json, null, 2) }}\n\n==================================================\n\nJob\n\n{{ JSON.stringify($json, null, 2) }}\n\n==================================================\n\nTASK\n\nSTEP 1\n\nRead ONLY the job description.\n\nExtract ONLY explicit technical requirements.\n\nTechnical requirements include ONLY:\n\n- Programming languages\n- Databases\n- Frameworks\n- Libraries\n- Cloud platforms\n- Software\n- BI tools\n- Version control\n- Operating systems\n- Technologies\n\nExamples\n\nPython\nSQL\nPower BI\nExcel\nTableau\nR\nTensorFlow\nPyTorch\nScikit-learn\nPandas\nNumPy\nSpark\nDocker\nKubernetes\nGit\nLinux\nAWS\nAzure\nGCP\nMATLAB\nJava\nJavaScript\nNode.js\nReact\nAngular\nVue\nC++\nC#\nPHP\nMongoDB\nPostgreSQL\nMySQL\nOracle\n\nDO NOT extract\n\n- Responsibilities\n- Company description\n- Benefits\n- Soft skills\n- Communication\n- Leadership\n- Problem solving\n- Fast learner\n- Team player\n- Motivation\n- Customer focus\n\nIMPORTANT\n\nIf Python is NOT explicitly written\n\nDO NOT extract Python.\n\nIf SQL is NOT explicitly written\n\nDO NOT extract SQL.\n\nIf Docker is NOT explicitly written\n\nDO NOT extract Docker.\n\nNever guess.\n\nNever infer from the job title.\n\n--------------------------------------------------\n\nSTEP 2\n\nCandidate skills are ONLY\n\n{{ $('Code in JavaScript').item.json.candidate.skills }}\n\nCreate\n\nmatched_skills\n\nmissing_skills\n\nRules\n\nmatched_skills =\nskills appearing in BOTH\n\ncandidate skills\n\nAND\n\nexplicit job skills\n\nmissing_skills =\nexplicit job skills\nthat are NOT in the candidate profile.\n\nNever invent skills.\n\nNever duplicate skills.\n\n--------------------------------------------------\n\nSTEP 3\n\nScore\n\nTechnical Skills (40)\n\n40\nCandidate has nearly all required technical skills.\n\n30\nCandidate has most.\n\n20\nCandidate has some.\n\n10\nCandidate has few.\n\n0\nCandidate has none.\n\n--------------------------------------------------\n\nExperience (25)\n\nCompare ONLY explicit experience requirements.\n\nIf the description says\n\n\"3 years\"\n\ncompare it.\n\nIf the description DOES NOT specify experience\n\nexperience_score = 15\n\nDo NOT give 25 automatically.\n\n--------------------------------------------------\n\nEducation (15)\n\nCompare required degree.\n\nIf no education requirement exists\n\neducation_score = 10\n\n--------------------------------------------------\n\nProjects (10)\n\nGive points ONLY if candidate projects use technologies required by the job.\n\nOtherwise give lower score.\n\n--------------------------------------------------\n\nLanguages (10)\n\nScore ONLY if the job explicitly requires languages.\n\nIf no language requirement exists\n\nlanguages_score = 10\n\n--------------------------------------------------\n\nFinal Score\n\nscore =\ntechnical_score +\nexperience_score +\neducation_score +\nprojects_score +\nlanguages_score\n\n--------------------------------------------------\n\nLevel\n\n90-100\nExcellent Match\n\n80-89\nVery Good Match\n\n70-79\nGood Match\n\n60-69\nFair Match\n\nBelow 60\nPoor Match\n\n--------------------------------------------------\n\nRecommendation\n\nExcellent Match\n\nApply Immediately\n\nVery Good Match\n\nStrongly Recommended\n\nGood Match\n\nWorth Applying\n\nFair Match\n\nOptional\n\nPoor Match\n\nNot Recommended\n\n--------------------------------------------------\n\nReason\n\nWrite ONE short sentence explaining the score.\n\nExample\n\n\"Candidate matches 4 of 6 required technical skills.\"\n\n--------------------------------------------------\n\nReturn ONLY\n\n{\n  \"title\": \"\",\n  \"company\": \"\",\n  \"location\": \"\",\n  \"link\": \"\",\n  \"technical_score\": 0,\n  \"experience_score\": 0,\n  \"education_score\": 0,\n  \"projects_score\": 0,\n  \"languages_score\": 0,\n  \"score\": 0,\n  \"level\": \"\",\n  \"recommendation\": \"\",\n  \"matched_skills\": [],\n  \"missing_skills\": [],\n  \"reason\": \"\"\n}",
+        "messages": {
+          "messageValues": [
+            {
+              "message": "You are a senior ATS recruiter.  You compare ONE candidate profile with ONE job description.  Your evaluation MUST be based ONLY on the information provided.  STRICT RULES  - Use ONLY the candidate profile. - Use ONLY the job description. - Never use your own knowledge. - Never infer technologies from the job title. - Never invent skills. - Never invent experience. - Never invent education. - Never invent certifications. - Never invent languages. - Never assume a Data Analyst role requires Python or SQL. - If a technology is not explicitly written in the job description, it does NOT exist.  Only compare explicit requirements.  Return ONLY valid JSON.  No markdown.  No explanations.  No extra text.  No comments."
+            }
+          ]
+        },
+        "batching": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.9,
+      "position": [
+        2336,
+        -64
+      ],
+      "id": "b911e2c8-ea3e-4f16-94f7-e105089607ac",
+      "name": "job matching cv LLM",
+      "executeOnce": false
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Telegram Trigger').item.json.message.chat.id }}",
+        "text": "📄 CV received successfully!  ⏳ Reading and analyzing your CV... This usually takes around 20–80 seconds.",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        640,
+        -448
+      ],
+      "id": "93dca791-788f-4672-8054-7e2ca0739ad2",
+      "name": "Send a text message1",
+      "webhookId": "81691309-20c6-4727-8f1d-8633ebe1ed83",
+      "credentials": {
+        "telegramApi": {
+          "id": "Ehqu4rYjjb9khqk0",
+          "name": "Telegram account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Telegram Trigger').first().json.message.chat.id }}",
+        "text": "⚠️ Invalid file.  Please send your CV in PDF format only.",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        512,
+        128
+      ],
+      "id": "6ebee5e1-860d-492d-b198-62e8ff2419a7",
+      "name": "Send a text failed ",
+      "webhookId": "d844df40-753b-4138-9446-54f3a54e51b8",
+      "credentials": {
+        "telegramApi": {
+          "id": "Ehqu4rYjjb9khqk0",
+          "name": "Telegram account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Telegram Trigger').first().json.message.chat.id }}",
+        "text": "=🏆 *Job Match*  *💼 Position:* {{ $json.title }}  *🏢 Company:* {{ $json.companyName }}  *📍 Location:* {{ $json.location }}  *⭐ Match:* *{{ $json.score }}/100*  *📈 Level:* {{ $json.level }}  *✅ Recommendation:* {{ $json.recommendation }}  *🟢 Matching Skills* {{ $json.matched_skills.join(\", \") }}  *🔴 Missing Skills* {{ $json.missing_skills.join(\", \") }}  *📝 Reason* {{ $json.reason }}  🔗 {{ $json.link }}",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        3904,
+        -80
+      ],
+      "id": "8af06166-99e3-4b0f-9eb4-3cc9e376d495",
+      "name": "Send a text message end",
+      "webhookId": "03c63f49-3a14-410f-b447-4bf92d457b3e",
+      "credentials": {
+        "telegramApi": {
+          "id": "Ehqu4rYjjb9khqk0",
+          "name": "Telegram account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Extract structured ATS information from the following CV.\n\nCV:\n\n{{ $json.text }}",
+        "messages": {
+          "messageValues": [
+            {
+              "message": "You are an ATS resume parser.  Extract information ONLY from the provided CV.  Rules  - Return ONLY valid JSON. - No Markdown. - No explanations. - Do NOT invent information. - Extract only information explicitly present in the CV. - Remove duplicates. - If a field is missing, return \"\" or [].  ------------------------- SKILLS -------------------------  Extract the ACTUAL skills written in the CV.  Include only explicit items such as:  - Programming languages - Frameworks - Libraries - Databases - Software - Tools - Platforms - Technologies - Methodologies - Technical competencies  Examples of valid skills:  Python Java C++ SQL Power BI Excel TensorFlow PyTorch Scikit-learn React Node.js Docker AWS Git Linux MATLAB  Never return category names such as:  Programming Frameworks Libraries Databases Software Tools Platforms Technologies Methodologies Technical competencies  ------------------------- EXPERIENCE -------------------------  Extract every professional experience.  Return:  - company - position - duration  ------------------------- EDUCATION -------------------------  Extract:  - institution - degree - field - duration  ------------------------- PROJECTS -------------------------  Extract every project.  Return:  - name - technologies (only technologies explicitly mentioned)  ------------------------- LANGUAGES -------------------------  Extract spoken languages only.  ------------------------- PREFERRED JOB TITLES -------------------------  Generate between 5 and 7 REAL hiring job titles.  Base them ONLY on:  - education - experience - internship - technical skills  Projects may only support existing qualifications.  Requirements:  - Must be common job titles used on LinkedIn, Indeed or Glassdoor. - Must realistically fit the candidate. - Never invent careers. - Never convert projects into job titles. - Never convert thesis or research into job titles. - Do NOT generate:   Senior   Lead   Principal   Manager   Director   Architect   Consultant   Specialist  unless explicitly supported by the CV.  Use Junior, Graduate or Intern only if supported.  Return ONLY:  {   \"skills\": [],   \"experience\": [     {       \"company\": \"\",       \"position\": \"\",       \"duration\": \"\"     }   ],   \"education\": [     {       \"institution\": \"\",       \"degree\": \"\",       \"field\": \"\",       \"duration\": \"\"     }   ],   \"projects\": [     {       \"name\": \"\",       \"technologies\": []     }   ],   \"languages\": [],   \"preferred_job_titles\": [] }"
+            }
+          ]
+        },
+        "batching": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.9,
+      "position": [
+        1120,
+        -64
+      ],
+      "id": "d6078db7-3eff-4dd6-9de7-4ffd7666c3e9",
+      "name": "cv annalyzer LLM"
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Telegram Trigger').item.json.message.chat.id }}",
+        "text": "✅ CV analysis completed!  🔍 Searching LinkedIn for relevant jobs...",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        1392,
+        -448
+      ],
+      "id": "b3932dfe-ba1d-40f3-929b-515a8aec0889",
+      "name": "Send a text message",
+      "webhookId": "81691309-20c6-4727-8f1d-8633ebe1ed83",
+      "credentials": {
+        "telegramApi": {
+          "id": "Ehqu4rYjjb9khqk0",
+          "name": "Telegram account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Telegram Trigger').item.json.message.chat.id }}",
+        "text": "=📊 Found {{ $items().length }} job opportunities.  🤖 Comparing every job with your CV to calculate: • Match score • Missing skills • Recommendation  Please wait...",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        1856,
+        -432
+      ],
+      "id": "0e2f8c0a-d134-4c2c-b69d-3f6291b5647d",
+      "name": "Send a text message2",
+      "webhookId": "81691309-20c6-4727-8f1d-8633ebe1ed83",
+      "executeOnce": true,
+      "credentials": {
+        "telegramApi": {
+          "id": "Ehqu4rYjjb9khqk0",
+          "name": "Telegram account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Telegram Trigger').item.json.message.chat.id }}",
+        "text": "=✅ Job matching completed!\n\n🏆 Selecting your Top {{ Math.min($items().length, 10) }} opportunities...",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        2576,
+        176
+      ],
+      "id": "b8e6e6c8-86d2-46fe-adc6-45d6c5acd187",
+      "name": "Send a text message3",
+      "webhookId": "81691309-20c6-4727-8f1d-8633ebe1ed83",
+      "executeOnce": true,
+      "credentials": {
+        "telegramApi": {
+          "id": "Ehqu4rYjjb9khqk0",
+          "name": "Telegram account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "d2146bb8-5c81-4d46-b141-27e345d2c341",
+              "leftValue": "={{ $json.score }}",
+              "rightValue": 30,
+              "operator": {
+                "type": "number",
+                "operation": "gt"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        3008,
+        -64
+      ],
+      "id": "a06b856c-9413-49f9-80ce-ef1182d11826",
+      "name": "If2"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "=google/gemma-4-31B",
+          "mode": "id"
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [
+        2240,
+        144
+      ],
+      "id": "8452025b-5d1e-4860-be17-176f50fec0df",
+      "name": "AI GRID MODEL",
+      "credentials": {
+        "openAiApi": {
+          "id": "ToH1pr7K36BrogYc",
+          "name": "OpenAI account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": "qwen2.5:3b",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOllama",
+      "typeVersion": 1,
+      "position": [
+        1056,
+        160
+      ],
+      "id": "c7237118-8b1c-480e-9131-a3fe0a4f0a8a",
+      "name": "Local host model ",
+      "credentials": {
+        "ollamaApi": {
+          "id": "xFbk9fywNeJndCsy",
+          "name": "Ollama account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Telegram Trigger": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Get a file",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Send a text failed ",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get a file": {
+      "main": [
+        [
+          {
+            "node": "Send a text message1",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Extract from File",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract from File": {
+      "main": [
+        [
+          {
+            "node": "cv annalyzer LLM",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Code in JavaScript2",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Send a text message2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript1": {
+      "main": [
+        [
+          {
+            "node": "If2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge": {
+      "main": [
+        [
+          {
+            "node": "Sort",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Sort": {
+      "main": [
+        [
+          {
+            "node": "Send a text message end",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript2": {
+      "main": [
+        [
+          {
+            "node": "job matching cv LLM",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "job matching cv LLM": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript1",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Send a text message3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send a text message1": {
+      "main": [
+        []
+      ]
+    },
+    "cv annalyzer LLM": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Send a text message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If2": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "AI GRID MODEL": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "job matching cv LLM",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Local host model ": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "cv annalyzer LLM",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "f604f94a-3c63-4ea9-b567-caaa68ee5e0b",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "0e8c495b9a1b7ec0a5b0b08ace86a7c7bb305eafefe3f33d2026288f4f51323b"
+  },
+  "id": "g3SgirelDyLwnZpv",
+  "tags": []
+}
