@@ -1,6 +1,6 @@
 # 🤖 AI CV Job Matcher
 
-![Workflow](Workflow.png)
+![Workflow](screenshots/Workflow.png)
 
 An AI-powered workflow built with **n8n**, **Ollama**, **AI Grid LLM API**, and **Telegram** that automatically analyzes a candidate's CV, searches LinkedIn jobs, evaluates every opportunity using AI, calculates an ATS-style match score, and sends personalized recommendations directly to Telegram.
 
