@@ -71,7 +71,7 @@ Telegram Response
 
 # 🖥 Workflow
 
-![Workflow](Workflow.png)
+![Workflow](screenshots/Workflow.png)
 
 The workflow is fully automated inside **n8n**.
 
